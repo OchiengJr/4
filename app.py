@@ -25,13 +25,14 @@ class PowerForm(Form):
     description = StringField('Description', [validators.InputRequired(), validators.Length(min=20)])
 
 # Define Schemas for Serialization
-class HeroSchema(ma.Schema):
+class HeroSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ('id', 'name', 'super_name', 'hero_powers')
+        model = Hero
+        include_fk = True
 
-class PowerSchema(ma.Schema):
+class PowerSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields = ('id', 'name', 'description')
+        model = Power
 
 hero_schema = HeroSchema()
 heroes_schema = HeroSchema(many=True)
@@ -92,7 +93,7 @@ def create_hero_power():
 
         if hero and power:
             if strength in ['Strong', 'Weak', 'Average']:
-                hero_power = HeroPower(hero=hero, power=power, strength=strength)
+                hero_power = HeroPower(hero_id=hero.id, power_id=power.id, strength=strength)
                 db.session.add(hero_power)
                 db.session.commit()
                 return jsonify(hero_power.to_dict())
@@ -104,4 +105,7 @@ def create_hero_power():
         return jsonify({"errors": form.errors}), 400
 
 if __name__ == '__main__':
+    # Ensure the database is created
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
